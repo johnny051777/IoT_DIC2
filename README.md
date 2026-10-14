@@ -1,5 +1,8 @@
 # CRISP-DM Regression Studio (50 Startups & Boston Housing)
 
+🌐 **Live Demo**: [https://iot-dic2-regression.vercel.app](https://iot-dic2-regression.vercel.app)
+📦 **GitHub**: [https://github.com/johnny051777/IoT_DIC2](https://github.com/johnny051777/IoT_DIC2)
+
 多元線性迴歸 × 5 種特徵選擇演算法互動式分析平台 (基於 CRISP-DM 資料探勘標準流程)。
 
 ## 專案亮點
