@@ -33,3 +33,5 @@ Thumbs.db
 
 # Local logs
 *.log
+
+.vercel
