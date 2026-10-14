@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CRISP-DM Regression Studio | 50 Startups & Boston Housing</title>
+  <meta name="description" content="Kaggle 50 Startups & Boston Housing 多元線性迴歸與 5 種特徵選擇 (Lasso, Forward SFS, RFE, ElasticNet, Exhaustive Search) 互動分析儀表板">
+  
+  <!-- Google Fonts & Plotly -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #090d16;
+      --bg-card: rgba(18, 24, 38, 0.75);
+      --bg-card-hover: rgba(26, 35, 54, 0.85);
+      --bg-glass: rgba(255, 255, 255, 0.04);
+      --border: rgba(255, 255, 255, 0.09);
+      --border-accent: rgba(99, 102, 241, 0.4);
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --primary-glow: rgba(99, 102, 241, 0.35);
+      --cyan: #06b6d4;
+      --cyan-glow: rgba(6, 182, 212, 0.25);
+      --emerald: #10b981;
+      --emerald-glow: rgba(16, 185, 129, 0.25);
+      --amber: #f59e0b;
+      --rose: #f43f5e;
+      --radius: 14px;
+      --font: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+    }
+
+    [data-theme="light"] {
+      --bg: #f8fafc;
+      --bg-card: rgba(255, 255, 255, 0.85);
+      --bg-card-hover: rgba(255, 255, 255, 0.95);
+      --bg-glass: rgba(0, 0, 0, 0.02);
+      --border: rgba(0, 0, 0, 0.08);
+      --border-accent: rgba(99, 102, 241, 0.35);
+      --text: #0f172a;
+      --text-muted: #475569;
+      --text-dim: #94a3b8;
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --primary-glow: rgba(79, 70, 229, 0.15);
+      --cyan: #0284c7;
+      --emerald: #059669;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 15% 10%, rgba(99, 102, 241, 0.12), transparent 35%),
+        radial-gradient(circle at 85% 20%, rgba(6, 182, 212, 0.1), transparent 30%),
+        radial-gradient(circle at 50% 80%, rgba(16, 185, 129, 0.08), transparent 40%);
+      background-attachment: fixed;
+    }
+
+    /* Container */
+    .app-container {
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 24px 20px 80px;
+    }
+
+    /* Header Nav */
+    header.hero-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px;
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 28px;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .brand-icon {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, var(--primary), var(--cyan));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 800;
+      font-size: 20px;
+      box-shadow: 0 4px 16px var(--primary-glow);
+    }
+    .brand-text h1 {
+      font-size: 1.3rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .brand-text p {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+    .badge-chip {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 20px;
+      background: rgba(99, 102, 241, 0.15);
+      color: var(--primary);
+      border: 1px solid var(--border-accent);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .btn-icon {
+      background: var(--bg-glass);
+      border: 1px solid var(--border);
+      color: var(--text);
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 1.1rem;
+    }
+    .btn-icon:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--primary);
+      transform: translateY(-1px);
+    }
+    .btn-link {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 10px;
+      background: var(--bg-glass);
+      border: 1px solid var(--border);
+      color: var(--text);
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .btn-link:hover {
+      border-color: var(--primary);
+      background: var(--bg-card-hover);
+      color: var(--primary);
+    }
+
+    /* Cards */
+    .glass-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+      transition: border-color 0.2s;
+    }
+    .glass-card:hover {
+      border-color: rgba(255, 255, 255, 0.14);
+    }
+
+    /* Section Headings */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .step-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--primary), var(--cyan));
+      color: white;
+      font-size: 0.8rem;
+      font-weight: 700;
+      box-shadow: 0 2px 8px var(--primary-glow);
+    }
+
+    /* Control Deck Form */
+    .control-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      align-items: end;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .form-group label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    select, input[type="text"], input[type="url"], input[type="number"] {
+      width: 100%;
+      padding: 11px 14px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.92rem;
+      transition: all 0.2s;
+      outline: none;
+    }
+    select:focus, input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-glow);
+    }
+    .file-drop-area {
+      position: relative;
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+      background: var(--bg-glass);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .file-drop-area:hover, .file-drop-area.dragover {
+      border-color: var(--primary);
+      background: rgba(99, 102, 241, 0.05);
+    }
+    .file-drop-area input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+    .file-drop-text {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .preset-chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    .chip-btn {
+      background: var(--bg-glass);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .chip-btn:hover {
+      color: var(--primary);
+      border-color: var(--primary);
+      background: rgba(99, 102, 241, 0.08);
+    }
+
+    .btn-run {
+      background: linear-gradient(135deg, var(--primary), #4338ca);
+      color: white;
+      border: none;
+      padding: 12px 28px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 18px var(--primary-glow);
+      transition: all 0.25s ease;
+      height: 46px;
+    }
+    .btn-run:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px var(--primary-glow);
+      filter: brightness(1.1);
+    }
+    .btn-run:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* KPI Summary Cards Grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .kpi-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+      overflow: hidden;
+    }
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary), var(--cyan));
+    }
+    .kpi-label {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .kpi-value {
+      font-size: 1.6rem;
+      font-weight: 800;
+      font-family: var(--mono);
+      letter-spacing: -0.02em;
+    }
+    .kpi-sub {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    /* Tables */
+    .table-wrapper {
+      overflow-x: auto;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      margin: 14px 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    th, td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      text-align: right;
+      white-space: nowrap;
+    }
+    th {
+      background: rgba(255, 255, 255, 0.02);
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-size: 0.74rem;
+      letter-spacing: 0.03em;
+    }
+    td:first-child, th:first-child { text-align: left; }
+    td:last-child { text-align: left; }
+    tbody tr:hover {
+      background: rgba(255, 255, 255, 0.025);
+    }
+    tr.best-row {
+      background: rgba(99, 102, 241, 0.12) !important;
+      font-weight: 600;
+    }
+    tr.best-row td:first-child {
+      color: var(--cyan);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Charts Container */
+    .chart-container {
+      width: 100%;
+      min-height: 400px;
+      margin: 12px 0 20px;
+      border-radius: 10px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 10px;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
+      gap: 20px;
+    }
+
+    /* Status Bar / Spinner */
+    .status-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 18px;
+      border-radius: 10px;
+      background: var(--bg-glass);
+      border: 1px solid var(--border);
+      font-size: 0.88rem;
+      margin-top: 14px;
+    }
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Prediction Simulator Interactive Deck */
+    .simulator-card {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(6, 182, 212, 0.06));
+      border: 1px solid var(--border-accent);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-top: 24px;
+    }
+    .sim-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px;
+      margin: 18px 0;
+    }
+    .sim-field {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .sim-field label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .sim-field input[type="range"] {
+      width: 100%;
+      accent-color: var(--primary);
+      cursor: pointer;
+    }
+    .sim-val-display {
+      font-family: var(--mono);
+      font-weight: 700;
+      color: var(--cyan);
+      font-size: 0.95rem;
+    }
+    .sim-result-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+    .sim-result-number {
+      font-size: 2.2rem;
+      font-family: var(--mono);
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--emerald), var(--cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Conclusion Alert */
+    .conclusion-box {
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 12px;
+      padding: 18px 22px;
+      margin-top: 18px;
+      font-size: 0.92rem;
+      color: var(--text);
+    }
+    .conclusion-box strong { color: var(--emerald); }
+
+    /* Utilities */
+    .hide { display: none !important; }
+    .text-emerald { color: var(--emerald); }
+    .text-amber { color: var(--amber); }
+    .text-rose { color: var(--rose); }
+    .text-cyan { color: var(--cyan); }
+    .mono { font-family: var(--mono); }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .hero-nav { flex-direction: column; gap: 14px; align-items: flex-start; }
+      .grid-2 { grid-template-columns: 1fr; }
+      .nav-actions { width: 100%; justify-content: flex-end; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+  <!-- Header / Navigation -->
+  <header class="hero-nav">
+    <div class="brand">
+      <div class="brand-icon">Σ</div>
+      <div class="brand-text">
+        <h1>
+          CRISP-DM Regression Studio
+          <span class="badge-chip">scikit-learn 1.7</span>
+        </h1>
+        <p>Kaggle 50 Startups & Boston Housing · 5 Feature Selection Algorithms · Dynamic Benchmark</p>
+      </div>
+    </div>
+    <div class="nav-actions">
+      <button class="btn-icon" id="theme-toggle" title="切換深色 / 淺色主題">☀️</button>
+      <a class="btn-link" href="https://github.com/johnny051777/IoT_DIC2" target="_blank" rel="noopener">
+        <svg height="18" width="18" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+        </svg>
+        GitHub
+      </a>
+    </div>
+  </header>
+
+  <!-- Problem / Dataset Control Deck -->
+  <section class="glass-card" aria-label="問題與資料集設定">
+    <div class="section-header">
+      <div class="section-title">
+        <span class="step-pill">1</span>
+        選擇迴歸問題與資料來源 (Dataset Configuration)
+      </div>
+      <span class="badge-chip">Interactive Deck</span>
+    </div>
+
+    <div class="control-grid">
+      <!-- Problem Dropdown -->
+      <div class="form-group">
+        <label for="ds-select">Problem (問題與資料集)</label>
+        <select id="ds-select">
+          <option value="startups" selected>💼 50 Startups (Kaggle) — 預測公司淨利潤 (Profit)</option>
+          <option value="boston">🏡 Boston Housing (Kaggle) — 預測房價中位數 (MEDV)</option>
+          <option value="custom">🌐 自訂 CSV URL (任意網路連結)</option>
+          <option value="upload">📁 上傳本機 CSV 檔案</option>
+        </select>
+      </div>
+
+      <!-- Custom URL Box -->
+      <div class="form-group hide" id="url-box">
+        <label for="csv-url">自訂 CSV URL (公開可下載連結)</label>
+        <input type="url" id="csv-url" placeholder="https://raw.githubusercontent.com/.../dataset.csv" 
+               value="https://raw.githubusercontent.com/Avik-Jain/100-Days-Of-ML-Code/master/datasets/50_Startups.csv">
+      </div>
+
+      <!-- File Upload Box -->
+      <div class="form-group hide" id="upload-box">
+        <label>上傳 CSV 檔案</label>
+        <div class="file-drop-area" id="file-drop-area">
+          <input type="file" id="csv-file-input" accept=".csv,text/csv">
+          <div class="file-drop-text" id="file-drop-text">📎 點擊或拖曳 CSV 檔案至此處</div>
+        </div>
+      </div>
+
+      <!-- Target Column Box -->
+      <div class="form-group hide" id="target-box">
+        <label for="target-col">目標變數欄位名稱 (留空預設最後一欄)</label>
+        <input type="text" id="target-col" placeholder="例如 Profit 或 MEDV">
+      </div>
+
+      <!-- Run Button -->
+      <div class="form-group" style="min-width: 160px;">
+        <button class="btn-run" id="btn-run">
+          <span id="btn-run-icon">⚡</span>
+          <span id="btn-run-text">執行 CRISP-DM 分析</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Quick Preset Buttons for Custom URL -->
+    <div class="preset-chips hide" id="preset-chips">
+      <span style="font-size:0.75rem; color:var(--text-dim); align-self:center;">快速範例:</span>
+      <button class="chip-btn" data-url="https://raw.githubusercontent.com/Avik-Jain/100-Days-Of-ML-Code/master/datasets/50_Startups.csv" data-target="Profit">50 Startups (Avik-Jain)</button>
+      <button class="chip-btn" data-url="https://raw.githubusercontent.com/selva86/datasets/master/BostonHousing.csv" data-target="medv">Boston Housing (selva86)</button>
+    </div>
+
+    <!-- Status Message Box -->
+    <div class="status-box" id="status-box">
+      <span class="text-cyan">ℹ️</span>
+      <span id="status-text">選擇題目後點擊「執行 CRISP-DM 分析」。系統將在後端運行 5 折交叉驗證與 5 種特徵選擇演算法。</span>
+    </div>
+  </section>
+
+  <!-- Output Dashboard (Initially Hidden) -->
+  <main id="analysis-output" class="hide">
+    
+    <!-- Phase 1-3: Business & Data Understanding -->
+    <section class="glass-card" id="phase-understanding">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="step-pill">2</span>
+          CRISP-DM 1–3: Business & Data Understanding & Preparation
+        </div>
+        <span class="badge-chip">80% Train / 20% Test</span>
+      </div>
+
+      <!-- KPI Summary Cards -->
+      <div class="kpi-grid" id="kpi-grid"></div>
+
+      <!-- Raw Data Preview -->
+      <details style="margin: 14px 0;" open>
+        <summary style="cursor:pointer; font-size:0.88rem; font-weight:700; color:var(--primary); margin-bottom:8px;">
+          📋 檢視資料集前 8 列預覽 (Raw Data Preview) & 欄位描述
+        </summary>
+        <div class="table-wrapper" id="preview-table-wrapper"></div>
+      </details>
+
+      <!-- Feature Correlation Heatmap -->
+      <div class="chart-container" id="plot-corr" style="min-height: 440px;"></div>
+    </section>
+
+    <!-- Phase 4: Modeling & Feature Selection -->
+    <section class="glass-card" id="phase-modeling">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="step-pill">3</span>
+          CRISP-DM 4: Modeling & 5 種特徵選擇演算法
+        </div>
+        <span class="badge-chip">Occam's Razor Selection</span>
+      </div>
+
+      <p style="font-size:0.86rem; color:var(--text-muted); margin-bottom: 14px;">
+        比較 5 種多元迴歸特徵選取機制：<b>Lasso (1-SE Rule)</b>、<b>Forward SFS</b>、<b>Recursive Feature Elimination (RFECV)</b>、<b>ElasticNet 係數排序</b>，以及評估所有組合的 <b>Exhaustive Search (窮舉全子集搜尋)</b>。
+      </p>
+
+      <!-- Selected Feature Matrix -->
+      <div class="chart-container" id="plot-matrix" style="min-height: 380px;"></div>
+
+      <div class="grid-2">
+        <!-- Lasso Shrinkage Path -->
+        <div class="chart-container" id="plot-lasso"></div>
+        <!-- Feature count vs CV RMSE (with exhaustive search cloud) -->
+        <div class="chart-container" id="plot-curves"></div>
+      </div>
+    </section>
+
+    <!-- Phase 5: Evaluation & Leaderboard -->
+    <section class="glass-card" id="phase-evaluation">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="step-pill">4</span>
+          CRISP-DM 5: Evaluation & 綜合排行榜 (Leaderboard)
+        </div>
+        <span class="badge-chip">5-Fold Cross Validation</span>
+      </div>
+
+      <!-- Leaderboard Table -->
+      <div class="table-wrapper" id="leaderboard-table-wrapper"></div>
+
+      <div class="grid-2">
+        <!-- RMSE & R2 Comparison Bar -->
+        <div class="chart-container" id="plot-compare"></div>
+        <!-- Actual vs Predicted Scatter -->
+        <div class="chart-container" id="plot-pred"></div>
+      </div>
+
+      <div class="grid-2">
+        <!-- Residuals Distribution Box Plot -->
+        <div class="chart-container" id="plot-resid"></div>
+        <!-- Standardized Coefficients Bar -->
+        <div class="chart-container" id="plot-coef"></div>
+      </div>
+
+      <!-- Exhaustive Search Top 10 Subsets -->
+      <h3 style="font-size: 1rem; margin-top: 18px; margin-bottom: 8px; color: var(--text-muted);">
+        🔍 Exhaustive Search 最優子集 Top 10 (以 5-Fold CV-RMSE 排序)
+      </h3>
+      <div class="table-wrapper" id="top-subsets-wrapper"></div>
+
+      <!-- Conclusion synthesis card -->
+      <div class="conclusion-box" id="conclusion-box"></div>
+    </section>
+
+    <!-- Phase 6: Live Prediction Simulator (What-If Playground) -->
+    <section class="simulator-card" id="phase-simulator">
+      <div class="section-header" style="border-bottom-color: var(--border-accent);">
+        <div class="section-title">
+          <span class="step-pill">5</span>
+          即時預測模擬器 (Real-Time "What-If" Playground)
+        </div>
+        <span class="badge-chip" style="background: rgba(16, 185, 129, 0.15); color: var(--emerald);">Interactive Simulator</span>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px;">
+        <p style="font-size:0.86rem; color:var(--text-muted);">
+          調整各特徵的數值或滑桿，系統將即時計算最佳迴歸模型的預測結果：
+        </p>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <label style="font-size:0.82rem; font-weight:600; color:var(--text-muted);">使用模型：</label>
+          <select id="sim-model-select" style="padding:6px 12px; font-size:0.85rem; width:auto;"></select>
+        </div>
+      </div>
+
+      <!-- Feature Sliders and Number Inputs Grid -->
+      <div class="sim-grid" id="sim-inputs-grid"></div>
+
+      <!-- Result Card -->
+      <div class="sim-result-box">
+        <div style="font-size:0.82rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.04em; font-weight:700;">
+          即時預測目標變數 (<span id="sim-target-name">Target</span>)
+        </div>
+        <div class="sim-result-number" id="sim-prediction-value">---</div>
+        <div id="sim-formula-hint" style="font-size:0.75rem; color:var(--text-dim); font-family:var(--mono); max-width:90%; overflow-x:auto;"></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+// State & Helpers
+let currentAnalysisData = null;
+let uploadedCsvContent = null;
+
+const $ = id => document.getElementById(id);
+
+// Theme Toggle
+const root = document.documentElement;
+const themeToggle = $("theme-toggle");
+themeToggle.onclick = () => {
+  const isDark = root.getAttribute("data-theme") === "dark";
+  const newTheme = isDark ? "light" : "dark";
+  root.setAttribute("data-theme", newTheme);
+  themeToggle.textContent = isDark ? "🌙" : "☀️";
+  if (currentAnalysisData) renderCharts(currentAnalysisData);
+};
+
+// Plotly theme config helper
+const getPlotlyLayout = () => {
+  const isDark = root.getAttribute("data-theme") === "dark";
+  return {
+    paper_bgcolor: "rgba(0,0,0,0)",
+    plot_bgcolor: "rgba(0,0,0,0)",
+    font: {
+      color: isDark ? "#e2e8f0" : "#1e293b",
+      family: "Plus Jakarta Sans, sans-serif",
+      size: 12
+    },
+    margin: { t: 45, l: 60, r: 25, b: 65 },
+    legend: { orientation: "h", y: -0.22 }
+  };
+};
+
+const drawPlot = (id, data, layout) => {
+  Plotly.newPlot(id, data, { ...getPlotlyLayout(), ...layout }, { responsive: true, displaylogo: false });
+};
+
+const formatNum = (x, decimals = 3) => {
+  if (x === null || x === undefined || isNaN(x)) return "N/A";
+  const num = Number(x);
+  if (Math.abs(num) >= 1000) return Math.round(num).toLocaleString();
+  return num.toFixed(decimals);
+};
+
+// UI Events for Dataset Selector
+const dsSelect = $("ds-select");
+const urlBox = $("url-box");
+const uploadBox = $("upload-box");
+const targetBox = $("target-box");
+const presetChips = $("preset-chips");
+
+dsSelect.onchange = () => {
+  const val = dsSelect.value;
+  urlBox.classList.toggle("hide", val !== "custom");
+  uploadBox.classList.toggle("hide", val !== "upload");
+  targetBox.classList.toggle("hide", val !== "custom" && val !== "upload");
+  presetChips.classList.toggle("hide", val !== "custom");
+};
+
+// Preset sample buttons
+document.querySelectorAll(".chip-btn").forEach(btn => {
+  btn.onclick = () => {
+    $("csv-url").value = btn.getAttribute("data-url");
+    $("target-col").value = btn.getAttribute("data-target");
+  };
+});
+
+// File upload handling
+const fileInput = $("csv-file-input");
+const fileDropText = $("file-drop-text");
+fileInput.onchange = e => {
+  const file = e.target.files[0];
+  if (file) {
+    fileDropText.textContent = `📄 ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+    const reader = new FileReader();
+    reader.onload = evt => {
+      uploadedCsvContent = evt.target.result;
+    };
+    reader.readAsText(file, "UTF-8");
+  }
+};
+
+// Drag and drop for file area
+const dropArea = $("file-drop-area");
+['dragenter', 'dragover'].forEach(event => {
+  dropArea.addEventListener(event, e => { e.preventDefault(); dropArea.classList.add('dragover'); }, false);
+});
+['dragleave', 'drop'].forEach(event => {
+  dropArea.addEventListener(event, e => { e.preventDefault(); dropArea.classList.remove('dragover'); }, false);
+});
+dropArea.addEventListener('drop', e => {
+  const file = e.dataTransfer.files[0];
+  if (file) {
+    fileInput.files = e.dataTransfer.files;
+    fileDropText.textContent = `📄 ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+    const reader = new FileReader();
+    reader.onload = evt => { uploadedCsvContent = evt.target.result; };
+    reader.readAsText(file, "UTF-8");
+  }
+});
+
+// Run Analysis Trigger
+const btnRun = $("btn-run");
+const statusBox = $("status-box");
+const statusText = $("status-text");
+
+btnRun.onclick = async () => {
+  btnRun.disabled = true;
+  $("btn-run-icon").innerHTML = '<div class="spinner"></div>';
+  $("btn-run-text").textContent = "分析運算中...";
+  statusText.innerHTML = '<span class="text-cyan">⚙️ 正在讀取資料集並執行 5-Fold 交叉驗證、Lasso 縮減與全子集最佳化...</span>';
+
+  const val = dsSelect.value;
+  let payload = {};
+
+  if (val === "upload") {
+    if (!uploadedCsvContent) {
+      alert("請先選擇或拖放一個 CSV 檔案！");
+      resetBtn();
+      return;
+    }
+    payload = { csv_data: uploadedCsvContent, target: $("target-col").value };
+  } else if (val === "custom") {
+    const url = $("csv-url").value.trim();
+    if (!url) {
+      alert("請輸入有效的 CSV 網址！");
+      resetBtn();
+      return;
+    }
+    payload = { url: url, target: $("target-col").value };
+  } else {
+    payload = { dataset: val };
+  }
+
+  try {
+    const res = await fetch("api/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || `伺服器回應錯誤 (狀態碼 ${res.status})`);
+    }
+
+    currentAnalysisData = data;
+    renderDashboard(data);
+    statusText.innerHTML = `<span class="text-emerald">✅ 分析完成！共載入 ${data.info.rows} 筆樣本，評估 6 種迴歸特徵選取模型。</span>`;
+  } catch (err) {
+    console.error(err);
+    statusText.innerHTML = `<span class="text-rose">❌ 分析失敗: ${err.message}</span>`;
+  } finally {
+    resetBtn();
+  }
+};
+
+function resetBtn() {
+  btnRun.disabled = false;
+  $("btn-run-icon").textContent = "⚡";
+  $("btn-run-text").textContent = "執行 CRISP-DM 分析";
+}
+
+// Render Entire Dashboard
+function renderDashboard(data) {
+  $("analysis-output").classList.remove("hide");
+
+  const info = data.info;
+  const preview = data.preview;
+  const results = data.results;
+  const features = info.features;
+
+  // 1. Render KPI Grid
+  const targetStats = preview && preview.stats && preview.stats[info.target] ? preview.stats[info.target] : null;
+  $("kpi-grid").innerHTML = `
+    <div class="kpi-card">
+      <div class="kpi-label">目標變數 (Target)</div>
+      <div class="kpi-value text-cyan">${info.target}</div>
+      <div class="kpi-sub">${targetStats ? `均值: ${formatNum(targetStats.mean)} | 範圍: [${formatNum(targetStats.min)}, ${formatNum(targetStats.max)}]` : '連續型目標值'}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">樣本數量 (Samples)</div>
+      <div class="kpi-value text-emerald">${info.rows}</div>
+      <div class="kpi-sub">訓練集: ${info.n_train} 筆 (80%) · 測試集: ${info.n_test} 筆 (20%)</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">有效特徵數 (Features)</div>
+      <div class="kpi-value text-amber">${features.length}</div>
+      <div class="kpi-sub">${info.notes && info.notes.length ? info.notes.join("；") : '全數為連續數值欄位'}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">子集評估數 (Subsets)</div>
+      <div class="kpi-value text-rose">${info.exhaustive_total}</div>
+      <div class="kpi-sub">特徵池 ${info.exhaustive_pool.length} 個 · 5-Fold CV 驗證</div>
+    </div>
+  `;
+
+  // 2. Render Raw Data Preview Table
+  if (preview && preview.rows && preview.headers) {
+    let thead = `<tr>${preview.headers.map(h => `<th style="${h === info.target ? 'color:var(--cyan);' : ''}">${h} ${h === info.target ? '(Target)' : ''}</th>`).join('')}</tr>`;
+    let tbody = preview.rows.map(row => `<tr>${row.map(val => `<td>${val}</td>`).join('')}</tr>`).join('');
+    $("preview-table-wrapper").innerHTML = `<table><thead>${thead}</thead><tbody>${tbody}</tbody></table>`;
+  }
+
+  // 3. Render Leaderboard Table
+  const bestIdx = results.reduce((best, curr, i) => {
+    if (curr.cv_rmse < results[best].cv_rmse * 0.999 || (curr.cv_rmse <= results[best].cv_rmse * 1.01 && curr.k < results[best].k)) {
+      return i;
+    }
+    return best;
+  }, 0);
+
+  let lbThead = `<tr>
+    <th>演算法 (Method)</th>
+    <th>選取數 (k)</th>
+    <th>Train RMSE</th>
+    <th>Test RMSE</th>
+    <th>Test R²</th>
+    <th>Adj R²</th>
+    <th>CV RMSE</th>
+    <th>CV R²</th>
+    <th>選取特徵組合 (Selected Features)</th>
+  </tr>`;
+
+  let lbTbody = results.map((r, i) => {
+    const isBest = i === bestIdx;
+    return `
+      <tr class="${isBest ? 'best-row' : ''}">
+        <td>${isBest ? '🏆 ' : ''}${r.method}</td>
+        <td class="mono">${r.k}</td>
+        <td class="mono">${formatNum(r.train_rmse)}</td>
+        <td class="mono">${formatNum(r.test_rmse)}</td>
+        <td class="mono ${r.test_r2 > 0.8 ? 'text-emerald' : ''}">${formatNum(r.test_r2, 4)}</td>
+        <td class="mono">${formatNum(r.adj_r2, 4)}</td>
+        <td class="mono" style="font-weight:700;">${formatNum(r.cv_rmse)}</td>
+        <td class="mono">${formatNum(r.cv_r2, 4)}</td>
+        <td style="font-size:0.78rem; max-width:280px; overflow:hidden; text-overflow:ellipsis;" title="${r.features.join(', ')}">
+          ${r.features.join(', ')}
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  $("leaderboard-table-wrapper").innerHTML = `<table><thead>${lbThead}</thead><tbody>${lbTbody}</tbody></table>`;
+
+  // 4. Render Top 10 Subsets Table
+  const ex = data.exhaustive;
+  let topThead = `<tr><th>排名</th><th>特徵數 (k)</th><th>5-Fold CV RMSE (越低越好)</th><th>5-Fold CV R² (越高越好)</th><th>包含特徵</th></tr>`;
+  let topTbody = ex.top.map((t, idx) => `
+    <tr>
+      <td class="mono" style="text-align:left;">#${idx + 1}</td>
+      <td class="mono">${t.k}</td>
+      <td class="mono text-emerald" style="font-weight:700;">${formatNum(t.cv_rmse)}</td>
+      <td class="mono">${formatNum(t.cv_r2, 4)}</td>
+      <td style="font-size:0.78rem; text-align:left;">${t.features.join(', ')}</td>
+    </tr>
+  `).join('');
+  $("top-subsets-wrapper").innerHTML = `<table><thead>${topThead}</thead><tbody>${topTbody}</tbody></table>`;
+
+  // 5. Conclusion Synthesis
+  const bestModel = results[bestIdx];
+  $("conclusion-box").innerHTML = `
+    <strong>📊 CRISP-DM 決策結論 (Occam's Razor 模型精簡原則)：</strong><br>
+    在評估的 ${results.length} 種方案中，<b>${bestModel.method}</b> 展現出最佳的綜合表現。僅使用 <b>${bestModel.k}</b> 個特徵（<code>${bestModel.features.join(', ')}</code>），即取得 <b>CV-RMSE = ${formatNum(bestModel.cv_rmse)}</b>、<b>Test R² = ${formatNum(bestModel.test_r2, 4)}</b>。<br>
+    相較於 Baseline 全特徵模型，該模型剔除了冗餘共線性變數，不僅提升預測泛化能力，更顯著降低模型複雜度與維護成本。
+  `;
+
+  // 6. Setup Interactive Simulator
+  setupSimulator(data, bestIdx);
+
+  // 7. Render Plotly Charts
+  renderCharts(data);
+}
+
+// Setup Prediction Simulator
+function setupSimulator(data, defaultBestIdx) {
+  const models = data.models;
+  const results = data.results;
+  const preview = data.preview;
+  const stats = (preview && preview.stats) || {};
+  const targetName = data.info.target;
+
+  $("sim-target-name").textContent = targetName;
+
+  const modelSelect = $("sim-model-select");
+  modelSelect.innerHTML = results.map((r, i) => 
+    `<option value="${r.method}" ${i === defaultBestIdx ? 'selected' : ''}>${r.method} (k=${r.k})</option>`
+  ).join('');
+
+  const renderSimInputs = () => {
+    const selectedMethod = modelSelect.value;
+    const model = models[selectedMethod];
+    if (!model) return;
+
+    const featNames = model.features;
+    const inputsGrid = $("sim-inputs-grid");
+    inputsGrid.innerHTML = featNames.map(name => {
+      const s = stats[name] || { min: 0, max: 100, mean: 50, median: 50 };
+      const rangeMin = s.min !== undefined ? s.min : 0;
+      const rangeMax = s.max !== undefined && s.max > rangeMin ? s.max : rangeMin + 100;
+      const initialVal = s.median !== undefined ? s.median : (rangeMin + rangeMax) / 2;
+      const step = (rangeMax - rangeMin) > 10 ? 1 : 0.05;
+
+      return `
+        <div class="sim-field">
+          <label title="${name}">${name}</label>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span class="sim-val-display" id="val-${name}">${formatNum(initialVal, 2)}</span>
+            <input type="number" id="num-${name}" class="mono" style="width:105px; padding:4px 8px; font-size:0.8rem;" 
+                   value="${initialVal}" step="${step}">
+          </div>
+          <input type="range" id="rng-${name}" min="${rangeMin}" max="${rangeMax}" step="${step}" value="${initialVal}">
+        </div>
+      `;
+    }).join('');
+
+    // Attach listeners
+    featNames.forEach(name => {
+      const numInput = $(`num-${name}`);
+      const rngInput = $(`rng-${name}`);
+      const valDisp = $(`val-${name}`);
+
+      const update = val => {
+        valDisp.textContent = formatNum(val, 2);
+        computePrediction();
+      };
+
+      rngInput.oninput = () => {
+        numInput.value = rngInput.value;
+        update(rngInput.value);
+      };
+
+      numInput.oninput = () => {
+        rngInput.value = numInput.value;
+        update(numInput.value);
+      };
+    });
+
+    computePrediction();
+  };
+
+  const computePrediction = () => {
+    const selectedMethod = modelSelect.value;
+    const model = models[selectedMethod];
+    if (!model) return;
+
+    let total = model.intercept;
+    let parts = [`截距 ${formatNum(model.intercept, 2)}`];
+
+    model.features.forEach(name => {
+      const coef = model.coefs[name] || 0;
+      const val = parseFloat($(`num-${name}`)?.value || 0);
+      const contribution = coef * val;
+      total += contribution;
+      parts.push(`(${formatNum(coef, 3)} × ${formatNum(val, 2)})`);
+    });
+
+    $("sim-prediction-value").textContent = formatNum(total, 2);
+    $("sim-formula-hint").textContent = `公式: 預測值 = ${parts.join(" + ")}`;
+  };
+
+  modelSelect.onchange = renderSimInputs;
+  renderSimInputs();
+}
+
+// Render All Plotly Charts
+function renderCharts(data) {
+  const isDark = root.getAttribute("data-theme") === "dark";
+  const results = data.results;
+  const methods = results.map(r => `${r.method}<br>(k=${r.k})`);
+  const features = data.info.features;
+
+  // 1. Correlation Heatmap
+  drawPlot("plot-corr", [{
+    type: "heatmap",
+    x: data.corr.names,
+    y: data.corr.names,
+    z: data.corr.z,
+    zmin: -1,
+    zmax: 1,
+    colorscale: "RdBu",
+    reversescale: true,
+    text: data.corr.z.map(r => r.map(v => v.toFixed(2))),
+    texttemplate: "%{text}",
+    textfont: { size: 10 }
+  }], {
+    title: { text: "特徵相關係數矩陣 (Correlation Heatmap)", font: { size: 14 } },
+    yaxis: { autorange: "reversed" },
+    margin: { t: 45, l: 110, r: 20, b: 100 }
+  });
+
+  // 2. Feature Selection Matrix Heatmap
+  drawPlot("plot-matrix", [{
+    type: "heatmap",
+    x: features,
+    y: results.map(r => r.method),
+    z: data.matrix,
+    colorscale: [[0, isDark ? "#1a2336" : "#e2e8f0"], [1, "#6366f1"]],
+    showscale: false,
+    xgap: 3,
+    ygap: 3
+  }], {
+    title: { text: "各特徵選擇方法之選取矩陣 (紫色 = 納入模型)", font: { size: 14 } },
+    yaxis: { autorange: "reversed" },
+    margin: { t: 45, l: 180, r: 20, b: 100 }
+  });
+
+  // 3. Lasso Regularization Path
+  const lp = data.lasso;
+  const lassoTraces = lp.coefs.map((c, i) => ({
+    x: lp.x,
+    y: c,
+    name: features[i],
+    mode: "lines",
+    line: { width: 2 }
+  })).concat([{
+    x: [lp.sel, lp.sel],
+    y: [Math.min(...lp.coefs.flat()), Math.max(...lp.coefs.flat())],
+    mode: "lines",
+    line: { dash: "dash", color: "#f43f5e", width: 2 },
+    name: "Lasso 1-SE 門檻"
+  }]);
+  drawPlot("plot-lasso", lassoTraces, {
+    title: { text: "Lasso 係數收縮路徑 (Coefficient Path)", font: { size: 14 } },
+    xaxis: { title: "log10(alpha) 正則化強度" },
+    yaxis: { title: "標準化係數 (Standardized Coef)" },
+    showlegend: features.length <= 15
+  });
+
+  // 4. Feature Count vs CV RMSE (Curves & Exhaustive Cloud)
+  const ex = data.exhaustive;
+  const cvCurves = data.curves;
+  const jitteredK = ex.k.map((k, i) => k + ((i * 7919 % 100) / 100 - 0.5) * 0.3);
+  drawPlot("plot-curves", [
+    {
+      x: cvCurves.RFE.k,
+      y: cvCurves.RFE.rmse,
+      mode: "lines+markers",
+      name: "RFECV 軌跡",
+      line: { color: "#06b6d4", width: 2.5 }
+    },
+    {
+      x: cvCurves["ElasticNet Ranking"].k,
+      y: cvCurves["ElasticNet Ranking"].rmse,
+      mode: "lines+markers",
+      name: "ElasticNet Top-k 軌跡",
+      line: { color: "#f59e0b", width: 2.5 }
+    },
+    {
+      x: jitteredK,
+      y: ex.rmse,
+      mode: "markers",
+      name: "Exhaustive 全子集",
+      marker: {
+        size: 5,
+        color: ex.r2,
+        colorscale: "Viridis",
+        showscale: true,
+        colorbar: { title: "CV R²", thickness: 10 }
+      },
+      opacity: 0.75,
+      hovertemplate: "特徵數=%{x:.0f}<br>CV-RMSE=%{y:.3f}<extra></extra>"
+    }
+  ], {
+    title: { text: "特徵維度 vs. 5-Fold CV-RMSE 演化曲線", font: { size: 14 } },
+    xaxis: { title: "選取特徵數 (k)", dtick: 1 },
+    yaxis: { title: "CV-RMSE (越低越好)" }
+  });
+
+  // 5. RMSE & R2 Comparison Bar Chart
+  drawPlot("plot-compare", [
+    { x: methods, y: results.map(r => r.test_rmse), type: "bar", name: "Test RMSE", marker: { color: "#6366f1" } },
+    { x: methods, y: results.map(r => r.cv_rmse), type: "bar", name: "5-Fold CV RMSE", marker: { color: "#06b6d4" } },
+    { x: methods, y: results.map(r => r.test_r2), type: "bar", name: "Test R²", xaxis: "x2", yaxis: "y2", marker: { color: "#10b981" } },
+    { x: methods, y: results.map(r => r.cv_r2), type: "bar", name: "5-Fold CV R²", xaxis: "x2", yaxis: "y2", marker: { color: "#f59e0b" } }
+  ], {
+    title: { text: "各模型 RMSE / R² 指標對比 (左側: RMSE / 右側: R²)", font: { size: 14 } },
+    grid: { rows: 1, columns: 2, pattern: "independent" },
+    barmode: "group",
+    margin: { t: 50, l: 55, r: 25, b: 110 }
+  });
+
+  // 6. Actual vs Predicted Scatter Plot
+  const allActual = Object.values(data.pred).flatMap(p => p.actual);
+  const minVal = Math.min(...allActual);
+  const maxVal = Math.max(...allActual);
+  const predTraces = Object.entries(data.pred).map(([name, p]) => ({
+    x: p.actual,
+    y: p.pred,
+    mode: "markers",
+    name: name,
+    marker: { size: 7, opacity: 0.8 }
+  })).concat([{
+    x: [minVal, maxVal],
+    y: [minVal, maxVal],
+    mode: "lines",
+    line: { dash: "dash", color: "gray" },
+    name: "y = x (Perfect Fit)"
+  }]);
+  drawPlot("plot-pred", predTraces, {
+    title: { text: "測試集真實值 vs 預測值 (Actual vs. Predicted)", font: { size: 14 } },
+    xaxis: { title: `真實目標值 (${data.info.target})` },
+    yaxis: { title: `預測目標值 (${data.info.target})` }
+  });
+
+  // 7. Residuals Distribution
+  const residTraces = Object.entries(data.pred).map(([name, p]) => ({
+    y: p.actual.map((a, i) => a - p.pred[i]),
+    type: "box",
+    name: name,
+    boxpoints: "all",
+    jitter: 0.35,
+    pointpos: 0
+  }));
+  drawPlot("plot-resid", residTraces, {
+    title: { text: "測試集殘差分佈 (Residuals = Actual - Predicted)", font: { size: 14 } },
+    yaxis: { title: "殘差 (Residual)" },
+    showlegend: false
+  });
+
+  // 8. Standardized Coefficients Bar
+  const coefTraces = Object.entries(data.coefs).map(([name, c]) => ({
+    x: features,
+    y: features.map(f => c[f] ?? 0),
+    type: "bar",
+    name: name
+  }));
+  drawPlot("plot-coef", coefTraces, {
+    title: { text: "標準化迴歸係數 (每增加 1 個標準差對目標之影響)", font: { size: 14 } },
+    barmode: "group",
+    yaxis: { title: "係數值 (標準差單位)" }
+  });
+}
+
+// Auto-trigger analysis on initial page load with 50 Startups
+window.addEventListener("DOMContentLoaded", () => {
+  btnRun.click();
+});
+</script>
+
+</body>
+</html>
